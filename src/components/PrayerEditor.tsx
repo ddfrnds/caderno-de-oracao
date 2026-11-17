@@ -1,7 +1,9 @@
 'use client';
 import { useActionState, useState } from 'react';
 import { createPrayerAction, savePrayerAction } from '@/app/actions/admin';
+import { parsePrayerBody } from '@/lib/prayer-body';
 import { BACKGROUNDS, FONTS, HEX, resolveBackground, resolveFont } from '@/lib/themes';
+import PrayerBody from './PrayerBody';
 
 type FileLite = { id: string; original_name: string; kind: 'image' | 'document' };
 export type EditorPrayer = {
@@ -39,6 +41,7 @@ export default function PrayerEditor({ prayer }: { prayer: EditorPrayer }) {
         <div className="field">
           <label htmlFor="body">Texto da oração</label>
           <textarea id="body" name="body" value={body} onChange={(ev) => setBody(ev.target.value)} />
+          <span className="hint">Formatação: <code>## Título</code> (centralizado), <code>&gt; linha</code> (centralizada), <code>**negrito**</code>, <code>*itálico*</code>. Linha em branco separa parágrafos.</span>
           {e?.body && <span className="error" role="alert">{e.body[0]}</span>}
         </div>
 
@@ -128,7 +131,9 @@ export default function PrayerEditor({ prayer }: { prayer: EditorPrayer }) {
             <img src={`/api/files/${cover}`} alt="" style={{ display: 'block', margin: '0 auto 1rem', width: '55%', boxShadow: '0 10px 24px -12px rgba(0,0,0,.6)' }} />
           )}
           <h2>{title || 'Título da oração'}</h2>
-          <div style={{ whiteSpace: 'pre-wrap', fontSize: f.size, lineHeight: 1.6, overflowWrap: 'anywhere' }}>{body || 'O texto aparecerá aqui.'}</div>
+          <div className="book-flow" style={{ fontSize: f.size, columnWidth: 'auto', transition: 'none' }}>
+            <PrayerBody blocks={parsePrayerBody(body || 'O texto aparecerá aqui.')} />
+          </div>
         </div>
       </aside>
     </form>

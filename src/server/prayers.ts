@@ -85,6 +85,11 @@ export type PrayerEditorData = Prayer & {
   included: Set<string>;
 };
 
+export async function findPrayerBySlug(slug: string): Promise<Prayer | null> {
+  const { rows } = await query<Prayer>(`select ${COLS} from prayers where slug = $1`, [slug]);
+  return rows[0] ?? null;
+}
+
 export async function getPrayerForEditor(id: string): Promise<PrayerEditorData | null> {
   if (!/^[0-9a-f-]{36}$/.test(id)) return null;
   const { rows } = await query<Prayer>(`select ${COLS} from prayers where id = $1`, [id]);
@@ -106,6 +111,7 @@ export type PrayerInput = {
   background: string;
   coverFileId?: string | null;
   includeFileIds?: string[];
+  slug?: string; // só na criação
   publish?: boolean;
   uploads?: ValidatedUpload[]; // arquivos extras enviados pelo administrador
   coverUpload?: ValidatedUpload | null;
@@ -114,7 +120,7 @@ export type PrayerInput = {
 /** Cria uma oração diretamente pelo administrador (sem envio de usuário). */
 export async function createPrayer(input: PrayerInput): Promise<string> {
   return tx(async (c) => {
-    const slug = await uniqueSlug(c, input.title);
+    const slug = await uniqueSlug(c, input.slug ?? input.title);
     const { rows } = await c.query<{ id: string }>(
       `insert into prayers (slug, title, body, font, background) values ($1, $2, $3, $4, $5) returning id`,
       [slug, input.title.trim(), input.body, input.font, input.background],
