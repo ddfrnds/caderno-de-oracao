@@ -115,8 +115,6 @@ export default function PrayerBook({ slug, title, subtitle, coverUrl, blocks, at
       <Link href="/oracoes" className="reader-back" style={{ color: bg === '#ffffff' ? '#000' : undefined }}>← Orações</Link>
 
       <div className="book" role="group" aria-label={`Livro: ${title}`}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img className="book-frame" src="/img/livro-renda.png" alt="" aria-hidden="true" />
         <div className="book-paper">
           <div
             ref={viewportRef}
