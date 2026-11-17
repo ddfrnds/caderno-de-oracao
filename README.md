@@ -1,36 +1,40 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Caderno de Oração
 
-## Getting Started
+Biblioteca digital de orações: visitantes leem, usuários cadastrados enviam (texto, foto, arquivo) e o administrador analisa, edita fonte/fundo e publica.
 
-First, run the development server:
+**Stack:** Next.js 16 (App Router) · PostgreSQL (`pg`, migrações SQL em `migrations/`) · sessões em cookie httpOnly com token hasheado no banco · bcrypt · Gmail SMTP (recuperação de senha) · Vercel Blob privado (uploads em produção).
+
+## Rodando localmente
 
 ```bash
+cp .env.example .env.local      # ajuste DATABASE_URL
+npm install
+npm run migrate                 # aplica migrations/*.sql
+ADMIN_NAME="Seu Nome" ADMIN_EMAIL=voce@exemplo.com ADMIN_PASSWORD='uma-senha-forte' npm run admin:create
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Sem `GMAIL_USER`/`GMAIL_APP_PASSWORD`, em desenvolvimento o link de recuperação de senha é impresso no terminal.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Testes
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+# precisa de um Postgres com o banco "caderno_test" (ou defina TEST_DATABASE_URL)
+npm test
+```
 
-## Learn More
+Cobrem validação, redirecionamento seguro, tipos de arquivo (por conteúdo), autenticação/sessões/recuperação de senha, fluxo envio → análise → publicação e regras de acesso aos arquivos.
 
-To learn more about Next.js, take a look at the following resources:
+## Deploy na Vercel
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. Crie um banco Postgres (Marketplace → Neon) e um **Blob Store privado**; conecte ao projeto (isso define `DATABASE_URL` e `BLOB_READ_WRITE_TOKEN`).
+2. Defina `APP_URL` (URL pública), `GMAIL_USER`, `GMAIL_APP_PASSWORD` (senha de app do Google) e `STORAGE_DRIVER=blob`.
+3. Rode `npm run migrate` e `npm run admin:create` apontando para o banco de produção (pode ser localmente com `DATABASE_URL` de produção).
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Regras de negócio
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `/enviar` exige login; visitante é levado a `/login?next=/enviar` e volta ao envio após entrar/cadastrar.
+- Envios ficam **pendentes**. Aprovar cria um **rascunho** da oração; ela só aparece no site depois de **Publicar** no editor (fonte, fundo, capa, anexos). Recusadas nunca aparecem.
+- Arquivos são servidos por `/api/files/[id]`: privados (dono do envio e admin) até a oração ser publicada.
+- Limite de upload: 4 MB por envio (limite de corpo das funções da Vercel).
+- `/admin` retorna 404 para quem não é administrador.
