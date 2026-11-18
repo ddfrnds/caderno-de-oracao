@@ -2,6 +2,8 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { Block } from '@/lib/prayer-body';
+import { retarget } from '@/lib/skin-canvas';
+import { skinSrc, type Skin } from '@/lib/themes';
 import PrayerBody from './PrayerBody';
 
 type Attachment = { id: string; name: string; kind: 'image' | 'document' };
@@ -16,12 +18,13 @@ type Props = {
   fontRem: number;
   bg: string;
   fg: string;
+  skin?: Skin | null;
 };
 
 const SCALES = [0.85, 1, 1.15, 1.3, 1.5];
 const GAP = 48;
 
-export default function PrayerBook({ slug, title, subtitle, coverUrl, blocks, attachments, fontFamily, fontRem, bg, fg }: Props) {
+export default function PrayerBook({ slug, title, subtitle, coverUrl, blocks, attachments, fontFamily, fontRem, bg, fg, skin }: Props) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const flowRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
@@ -30,6 +33,34 @@ export default function PrayerBook({ slug, title, subtitle, coverUrl, blocks, at
   const [scaleIdx, setScaleIdx] = useState(1);
   const restored = useRef(false);
   const touch = useRef<{ x: number; y: number } | null>(null);
+  const bookRef = useRef<HTMLDivElement>(null);
+  const canvasHost = useRef<HTMLDivElement>(null);
+  const [inset, setInset] = useState<{ left: number; right: number; top: number; bottom: number } | null>(null);
+
+  // moldura em imagem: redesenhada no tamanho exato da tela (cantos intactos, faixas alongadas)
+  useEffect(() => {
+    if (skin?.kind !== 'frame') return;
+    const box = bookRef.current;
+    const host = canvasHost.current;
+    if (!box || !host) return;
+    let img: HTMLImageElement | null = new Image();
+    let raf = 0;
+    const draw = () => {
+      if (!img || !img.complete || !img.naturalWidth) return;
+      const w = Math.round(box.clientWidth), h = Math.round(box.clientHeight);
+      if (w < 50 || h < 50) return;
+      const r = retarget(img, skin, w, h, Math.min(2, window.devicePixelRatio || 1));
+      r.canvas.className = 'book-canvas';
+      host.replaceChildren(r.canvas);
+      setInset(r.inset);
+    };
+    const schedule = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(draw); };
+    img.onload = schedule;
+    img.src = skinSrc(skin);
+    const ro = new ResizeObserver(schedule);
+    ro.observe(box);
+    return () => { ro.disconnect(); cancelAnimationFrame(raf); if (img) img.onload = null; img = null; };
+  }, [skin]);
 
   // tamanho da letra e página lidos do navegador (por oração)
   useEffect(() => {
@@ -114,8 +145,22 @@ export default function PrayerBook({ slug, title, subtitle, coverUrl, blocks, at
     <div className="reader" style={{ background: bg }}>
       <Link href="/oracoes" className="reader-back" style={{ color: bg === '#ffffff' ? '#000' : undefined }}>← Orações</Link>
 
-      <div className="book" role="group" aria-label={`Livro: ${title}`}>
-        <div className="book-paper">
+      <div
+        ref={bookRef}
+        className={`book${skin ? (skin.kind === 'large' ? ' large' : ' skin') : ''}`}
+        role="group"
+        aria-label={`Livro: ${title}`}
+        style={skin?.kind === 'large' ? { backgroundImage: `url(${skin.texture})` } : undefined}
+      >
+        {skin?.kind === 'frame' && <div ref={canvasHost} className="book-canvas-host" aria-hidden="true" />}
+        {skin?.kind === 'large' && skin.seal && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img className="book-seal" src={skin.seal} alt="" aria-hidden="true" />
+        )}
+        <div
+          className="book-paper"
+          style={skin?.kind === 'frame' ? (inset ? { inset: 'auto', left: inset.left + 10, right: inset.right + 10, top: inset.top + 8, bottom: inset.bottom + 8, padding: 0 } : { visibility: 'hidden' }) : undefined}
+        >
           <div
             ref={viewportRef}
             className="book-viewport"

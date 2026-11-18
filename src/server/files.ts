@@ -1,7 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import type { PoolClient } from 'pg';
 import { safeFileName, sniffFile, type Sniffed } from '@/lib/file-sniff';
-import { query } from './db';
+import { query, tx } from './db';
+import { optimizeImage } from './image-optimize';
 import { storage } from './storage';
 import type { User } from './users';
 
@@ -38,7 +39,9 @@ export async function validateUploads(
     if (!sniffed) return { ok: false, error: `Tipo de arquivo não permitido: ${safeFileName(f.name)}. Use imagens (JPG, PNG, WEBP, GIF), PDF, DOC, DOCX, ODT, RTF ou TXT.` };
     if (sniffed.kind === 'image' && !allow.images) return { ok: false, error: 'Neste campo envie apenas documentos.' };
     if (sniffed.kind === 'document' && !allow.documents) return { ok: false, error: 'Neste campo envie apenas imagens.' };
-    out.push({ name: safeFileName(f.name), data, sniffed });
+    const opt = await optimizeImage(data, sniffed);
+    const name = opt.changed ? safeFileName(f.name).replace(/\.[^.]*$/, '') + '.webp' : safeFileName(f.name);
+    out.push({ name, data: opt.data, sniffed: opt.sniffed });
   }
   return { ok: true, files: out };
 }
@@ -69,6 +72,21 @@ export async function storeUploads(
     throw err;
   }
   return rows;
+}
+
+/** Apaga um arquivo (registro + armazenamento). Se era a capa de uma oração, a oração fica sem capa. */
+export async function deleteFile(fileId: string): Promise<boolean> {
+  if (!/^[0-9a-f-]{36}$/.test(fileId)) return false;
+  const key = await tx(async (c) => {
+    const { rows } = await c.query<{ storage_key: string }>('select storage_key from files where id = $1 for update', [fileId]);
+    if (!rows[0]) return null;
+    await c.query('update prayers set cover_file_id = null where cover_file_id = $1', [fileId]);
+    await c.query('delete from files where id = $1', [fileId]);
+    return rows[0].storage_key;
+  });
+  if (!key) return false;
+  await removeStoredKeys([key]);
+  return true;
 }
 
 export async function removeStoredKeys(keys: string[]): Promise<void> {
