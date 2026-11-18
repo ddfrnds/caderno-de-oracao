@@ -2,7 +2,7 @@
 import { useActionState, useState } from 'react';
 import { createPrayerAction, deleteFileAction, savePrayerAction } from '@/app/actions/admin';
 import { parsePrayerBody } from '@/lib/prayer-body';
-import { BACKGROUNDS, FONTS, HEX, SKINS, SKIN_PREFIX, resolveBackground, resolveFont, skinFor, skinSrc, skinThumb } from '@/lib/themes';
+import { BACKGROUNDS, FONTS, HEX, SKINS, SKIN_PREFIX, resolveBackground, resolveFont, skinFor, skinPaperPct, skinSrc, skinThumb } from '@/lib/themes';
 import FilePicker from './FilePicker';
 import PrayerBody from './PrayerBody';
 
@@ -150,7 +150,7 @@ export default function PrayerEditor({ prayer }: { prayer: EditorPrayer }) {
         <p className="hint">Pré-visualização</p>
         {skin?.kind === 'frame' ? (
           <div className="skin-preview" style={{ backgroundImage: `url(${skinSrc(skin)})`, aspectRatio: `${skin.w} / ${skin.h}`, color: theme.fg, fontFamily: f.family }}>
-            <div className="skin-paper" style={{ top: `${skin.paper.top}%`, right: `${skin.paper.right}%`, bottom: `${skin.paper.bottom}%`, left: `${skin.paper.left}%` }}>
+            <div className="skin-paper" style={{ top: `${skinPaperPct(skin).top}%`, right: `${skinPaperPct(skin).right}%`, bottom: `${skinPaperPct(skin).bottom}%`, left: `${skinPaperPct(skin).left}%` }}>
               <h2>{title || 'Título da oração'}</h2>
               <div className="book-flow" style={{ fontSize: `calc(${f.size} * .62)`, columnWidth: 'auto', transition: 'none' }}>
                 <PrayerBody blocks={parsePrayerBody(body || 'O texto aparecerá aqui.')} />

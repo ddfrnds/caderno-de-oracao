@@ -47,11 +47,22 @@ describe('fundos e molduras', () => {
     expect(isBackground('skin:nao-existe')).toBe(false);
     expect(prayerSchema.safeParse({ title: 'a', body: '', font: 'garamond', background: 'skin:grande-verde' }).success).toBe(true);
   });
-  it('há ao menos um "papel grande" e toda moldura tem área útil válida', () => {
+  it('há ao menos um "papel grande" e toda moldura tem recorte, papel e cortes coerentes', () => {
     expect(SKINS.some((s) => s.kind === 'large')).toBe(true);
     for (const s of SKINS.filter((x) => x.kind === 'frame')) {
-      expect(s.paper.left + s.paper.right).toBeLessThan(60);
-      expect(s.paper.top + s.paper.bottom).toBeLessThan(75);
+      const { crop, paper } = s;
+      expect(crop.x0).toBeLessThan(paper.l);
+      expect(paper.r).toBeLessThan(crop.x1);
+      expect(crop.y0).toBeLessThan(paper.t);
+      expect(paper.b).toBeLessThan(crop.y1);
+      expect(s.bands.length).toBeGreaterThan(0);
+      for (const b of s.bands) {
+        expect(b.xl[1]).toBeLessThan(b.xr[0]);
+        expect(b.xl[1] - b.xl[0]).toBe(s.bands[0].xl[1] - s.bands[0].xl[0]); // mesma largura em todas as faixas
+        expect(b.xr[1] - b.xr[0]).toBe(b.xl[1] - b.xl[0]);
+      }
+      expect(s.yCut[0]).toBeGreaterThan(paper.t);
+      expect(s.yCut[1]).toBeLessThan(paper.b);
     }
     expect(resolveBackground('skin:grande-vinho').bg).toBe(skinFor('skin:grande-vinho')!.backdrop);
   });
