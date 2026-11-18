@@ -109,8 +109,9 @@ export async function togglePublishAction(fd: FormData): Promise<void> {
   redirect('/admin?status=oracoes');
 }
 
-export async function deleteFileAction(fd: FormData): Promise<void> {
+export async function deleteFileAction(fileId: string, _fd: FormData): Promise<void> {
   await requireAdmin();
-  await deleteFile(id(fd, 'fileId'));
+  if (!UUID.test(fileId)) throw new Error('ID inválido');
+  await deleteFile(fileId);
   revalidatePath('/', 'layout');
 }
