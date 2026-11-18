@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import PrayerBook from '@/components/PrayerBook';
 import SiteHeader from '@/components/SiteHeader';
 import { parsePrayerBody, splitTitle } from '@/lib/prayer-body';
-import { resolveBackground, resolveFont } from '@/lib/themes';
+import { resolveBackground, resolveFont, skinFor } from '@/lib/themes';
 import { getPublishedPrayerBySlug } from '@/server/prayers';
 
 export const dynamic = 'force-dynamic';
@@ -34,6 +34,7 @@ export default async function PrayerPage({ params }: { params: Promise<{ slug: s
           fontRem={parseFloat(font.size)}
           bg={theme.bg}
           fg="#3b2a20"
+          skin={skinFor(prayer.background)}
         />
       </main>
     </>

@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { requireAdmin } from '@/server/auth';
-import { validateUploads } from '@/server/files';
+import { deleteFile, validateUploads } from '@/server/files';
 import { createPrayer, deletePrayer, setPublished, updatePrayer, type PrayerInput } from '@/server/prayers';
 import { approveSubmission, deleteSubmission, PrayerExistsError, rejectSubmission } from '@/server/submissions';
 import { fieldErrors, prayerSchema } from '@/lib/validation';
@@ -107,4 +107,10 @@ export async function togglePublishAction(fd: FormData): Promise<void> {
   await setPublished(id(fd), String(fd.get('publish')) === '1');
   revalidatePath('/', 'layout');
   redirect('/admin?status=oracoes');
+}
+
+export async function deleteFileAction(fd: FormData): Promise<void> {
+  await requireAdmin();
+  await deleteFile(id(fd, 'fileId'));
+  revalidatePath('/', 'layout');
 }
