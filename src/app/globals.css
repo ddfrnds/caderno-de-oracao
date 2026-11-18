@@ -290,3 +290,27 @@ dialog.notice-dialog h2 { font-family: var(--font-script2); font-weight: 400; co
 .reader-controls button:disabled { opacity: .35; cursor: default; }
 .reader-controls [role=status] { min-width: 5.2rem; text-align: center; }
 .reader-controls .sep { width: 1px; height: 1.6rem; background: rgba(253,246,236,.35); margin: 0 .3rem; }
+
+/* ---------- molduras prontas ---------- */
+.book.skin { border: 0; border-image: none; width: min(100vw, 640px); height: auto; min-height: 0; background-size: 100% 100%; background-repeat: no-repeat; }
+.book.skin .book-paper { padding: 0; }
+.book.large {
+  border: 0; border-image: none; width: min(100vw, 1000px); height: calc(100svh - 14rem); margin-top: 1.6rem;
+  background-size: cover; background-position: center; box-shadow: 0 16px 34px -12px rgba(0,0,0,.6); filter: none;
+}
+.book.large .book-paper { padding: clamp(1.6rem, 5vw, 3.2rem) clamp(1.1rem, 4.2vw, 3.4rem); }
+.book-seal { position: absolute; z-index: 3; left: 50%; top: 0; width: clamp(54px, 9vw, 84px); transform: translate(-50%, -50%); pointer-events: none; }
+.reader-controls { position: sticky; bottom: 0; padding: .6rem 1rem; }
+.skin-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(8.2rem, 1fr)); gap: .6rem; }
+.skin-opt { display: grid; gap: .3rem; justify-items: center; text-align: center; font-size: .85rem; padding: .35rem; border: 2px solid var(--gold-soft); background: #fffdf8; cursor: pointer; }
+.skin-opt.on { border-color: var(--wine, #5b1a24); box-shadow: 0 0 0 2px rgba(91,26,36,.25); }
+.skin-opt input { position: absolute; opacity: 0; pointer-events: none; }
+.skin-opt img { width: 100%; height: 9.5rem; object-fit: cover; object-position: top; display: block; }
+.skin-preview { width: 100%; max-width: 20rem; margin: 0 auto; background-size: 100% 100%; background-repeat: no-repeat; position: relative; box-shadow: 0 10px 30px -18px rgba(0,0,0,.6); }
+.skin-paper { position: absolute; overflow: hidden; }
+.skin-paper h2 { text-align: center; font-weight: 600; font-size: .95rem; margin: 0 0 .3rem; }
+.link-danger { background: none; border: 0; padding: 0 .2rem; color: #8a1c1c; text-decoration: underline; cursor: pointer; font: inherit; font-size: .9rem; }
+.file-picker .picked { list-style: none; margin: .5rem 0 0; padding: 0; display: grid; gap: .4rem; }
+.file-picker .picked li { display: flex; align-items: center; gap: .6rem; }
+.file-picker .picked img { width: 3rem; height: 3rem; object-fit: cover; border: 1px solid var(--gold-soft); }
+.file-picker .picked-name { flex: 1; overflow-wrap: anywhere; }

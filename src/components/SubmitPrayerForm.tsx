@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { useActionState, useEffect, useRef } from 'react';
 import { submitPrayerAction } from '@/app/actions/submit';
+import FilePicker from './FilePicker';
 import { SubmitButton } from './SubmitButton';
 
 export const REVIEW_NOTICE =
@@ -52,12 +53,13 @@ export default function SubmitPrayerForm() {
       </div>
       <div className="field">
         <label htmlFor="photos">Fotos (opcional)</label>
-        <input id="photos" name="photos" type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple />
+        <FilePicker id="photos" name="photos" accept="image/jpeg,image/png,image/webp,image/gif" multiple images />
+        <span className="hint">As fotos são reduzidas automaticamente. Você pode remover qualquer uma antes de enviar.</span>
         {e?.photos && <span className="error" role="alert">{e.photos[0]}</span>}
       </div>
       <div className="field">
         <label htmlFor="documents">Arquivos (opcional)</label>
-        <input id="documents" name="documents" type="file" accept=".pdf,.doc,.docx,.odt,.rtf,.txt" multiple />
+        <FilePicker id="documents" name="documents" accept=".pdf,.doc,.docx,.odt,.rtf,.txt" multiple />
         <span className="hint">PDF, DOC, DOCX, ODT, RTF ou TXT. Os arquivos somam, no máximo, 4 MB.</span>
         {e?.documents && <span className="error" role="alert">{e.documents[0]}</span>}
       </div>

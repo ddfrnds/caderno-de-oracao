@@ -1,8 +1,9 @@
 'use client';
 import { useActionState, useState } from 'react';
-import { createPrayerAction, savePrayerAction } from '@/app/actions/admin';
+import { createPrayerAction, deleteFileAction, savePrayerAction } from '@/app/actions/admin';
 import { parsePrayerBody } from '@/lib/prayer-body';
-import { BACKGROUNDS, FONTS, HEX, resolveBackground, resolveFont } from '@/lib/themes';
+import { BACKGROUNDS, FONTS, HEX, SKINS, SKIN_PREFIX, resolveBackground, resolveFont, skinFor, skinSrc, skinThumb } from '@/lib/themes';
+import FilePicker from './FilePicker';
 import PrayerBody from './PrayerBody';
 
 type FileLite = { id: string; original_name: string; kind: 'image' | 'document' };
@@ -20,11 +21,16 @@ export default function PrayerEditor({ prayer }: { prayer: EditorPrayer }) {
   const [font, setFont] = useState(prayer.font);
   const [bg, setBg] = useState(isCustom ? 'custom' : prayer.background);
   const [custom, setCustom] = useState(isCustom ? prayer.background : '#f3e8d2');
-  const [cover, setCover] = useState(prayer.cover_file_id ?? '');
+  const [coverSel, setCover] = useState(prayer.cover_file_id ?? '');
   const theme = resolveBackground(bg === 'custom' ? custom : bg);
+  const skin = skinFor(bg);
   const f = resolveFont(font);
   const e = state?.errors;
   const images = prayer.files.filter((x) => x.kind === 'image');
+  const cover = images.some((im) => im.id === coverSel) ? coverSel : ''; // capa apagada some da seleção
+  const confirmDelete = (name: string) => (ev: React.MouseEvent) => {
+    if (!window.confirm(`Excluir "${name}" definitivamente? Esta ação não pode ser desfeita.`)) ev.preventDefault();
+  };
 
   return (
     <form action={action} className="editor" noValidate>
@@ -53,7 +59,7 @@ export default function PrayerEditor({ prayer }: { prayer: EditorPrayer }) {
         </div>
 
         <div className="field">
-          <span className="label">Fundo</span>
+          <span className="label">Cor de fundo (com a moldura de renda clássica)</span>
           <div className="swatches">
             {Object.entries(BACKGROUNDS).map(([k, v]) => (
               <label key={k}>
@@ -70,6 +76,21 @@ export default function PrayerEditor({ prayer }: { prayer: EditorPrayer }) {
         </div>
 
         <div className="field">
+          <span className="label">Ou escolha uma moldura pronta</span>
+          <div className="skin-grid">
+            {SKINS.map((sk) => (
+              <label key={sk.id} className={bg === SKIN_PREFIX + sk.id ? 'skin-opt on' : 'skin-opt'}>
+                <input type="radio" name="background" value={SKIN_PREFIX + sk.id} checked={bg === SKIN_PREFIX + sk.id} onChange={() => setBg(SKIN_PREFIX + sk.id)} />
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={skinThumb(sk)} alt="" loading="lazy" />
+                <span>{sk.label}</span>
+              </label>
+            ))}
+          </div>
+          <span className="hint">“Papel grande” aproveita quase toda a tela: ideal para orações longas.</span>
+        </div>
+
+        <div className="field">
           <span className="label">Capa</span>
           {images.length > 0 && (
             <div className="cover-options">
@@ -79,12 +100,13 @@ export default function PrayerEditor({ prayer }: { prayer: EditorPrayer }) {
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={`/api/files/${im.id}`} alt={im.original_name} />
                   <span><input type="radio" name="coverFileId" value={im.id} checked={cover === im.id} onChange={() => setCover(im.id)} /> usar</span>
+                  <button type="submit" className="link-danger" formAction={deleteFileAction} name="fileId" value={im.id} onClick={confirmDelete(im.original_name)}>Excluir</button>
                 </label>
               ))}
             </div>
           )}
           <label htmlFor="coverUpload" className="hint">{images.length ? 'Ou envie uma nova capa (substitui a seleção):' : 'Enviar capa:'}</label>
-          <input id="coverUpload" name="coverUpload" type="file" accept="image/jpeg,image/png,image/webp,image/gif" />
+          <FilePicker id="coverUpload" name="coverUpload" accept="image/jpeg,image/png,image/webp,image/gif" images />
           {e?.coverUpload && <span className="error" role="alert">{e.coverUpload[0]}</span>}
         </div>
 
@@ -94,14 +116,15 @@ export default function PrayerEditor({ prayer }: { prayer: EditorPrayer }) {
             {prayer.files.filter((x) => x.id !== cover).map((x) => (
               <label key={x.id} className="radio-row">
                 <input type="checkbox" name="include" value={x.id} defaultChecked={prayer.included.includes(x.id)} /> {x.original_name}
+                <button type="submit" className="link-danger" formAction={deleteFileAction} name="fileId" value={x.id} onClick={confirmDelete(x.original_name)}>Excluir</button>
               </label>
             ))}
           </div>
         )}
         <div className="field">
           <label htmlFor="extraFiles">Adicionar imagens ou arquivos complementares</label>
-          <input id="extraFiles" name="extraFiles" type="file" multiple />
-          <span className="hint">Somam, no máximo, 4 MB por salvamento.</span>
+          <FilePicker id="extraFiles" name="extraFiles" multiple images />
+          <span className="hint">As fotos são reduzidas automaticamente. Somam, no máximo, 4 MB por salvamento.</span>
           {e?.extraFiles && <span className="error" role="alert">{e.extraFiles[0]}</span>}
         </div>
 
@@ -125,16 +148,27 @@ export default function PrayerEditor({ prayer }: { prayer: EditorPrayer }) {
 
       <aside className="preview" aria-label="Pré-visualização">
         <p className="hint">Pré-visualização</p>
-        <div className="preview-sheet" style={{ background: theme.bg, color: theme.fg, fontFamily: f.family }}>
-          {cover && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={`/api/files/${cover}`} alt="" style={{ display: 'block', margin: '0 auto 1rem', width: '55%', boxShadow: '0 10px 24px -12px rgba(0,0,0,.6)' }} />
-          )}
-          <h2>{title || 'Título da oração'}</h2>
-          <div className="book-flow" style={{ fontSize: f.size, columnWidth: 'auto', transition: 'none' }}>
-            <PrayerBody blocks={parsePrayerBody(body || 'O texto aparecerá aqui.')} />
+        {skin?.kind === 'frame' ? (
+          <div className="skin-preview" style={{ backgroundImage: `url(${skinSrc(skin)})`, aspectRatio: `${skin.w} / ${skin.h}`, color: theme.fg, fontFamily: f.family }}>
+            <div className="skin-paper" style={{ top: `${skin.paper.top}%`, right: `${skin.paper.right}%`, bottom: `${skin.paper.bottom}%`, left: `${skin.paper.left}%` }}>
+              <h2>{title || 'Título da oração'}</h2>
+              <div className="book-flow" style={{ fontSize: `calc(${f.size} * .62)`, columnWidth: 'auto', transition: 'none' }}>
+                <PrayerBody blocks={parsePrayerBody(body || 'O texto aparecerá aqui.')} />
+              </div>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="preview-sheet" style={{ background: skin ? `url(${skin.texture}) center / cover` : theme.bg, color: theme.fg, fontFamily: f.family }}>
+            {cover && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={`/api/files/${cover}`} alt="" style={{ display: 'block', margin: '0 auto 1rem', width: '55%', boxShadow: '0 10px 24px -12px rgba(0,0,0,.6)' }} />
+            )}
+            <h2>{title || 'Título da oração'}</h2>
+            <div className="book-flow" style={{ fontSize: f.size, columnWidth: 'auto', transition: 'none' }}>
+              <PrayerBody blocks={parsePrayerBody(body || 'O texto aparecerá aqui.')} />
+            </div>
+          </div>
+        )}
       </aside>
     </form>
   );
