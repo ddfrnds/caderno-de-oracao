@@ -100,7 +100,7 @@ export default function PrayerEditor({ prayer }: { prayer: EditorPrayer }) {
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={`/api/files/${im.id}`} alt={im.original_name} />
                   <span><input type="radio" name="coverFileId" value={im.id} checked={cover === im.id} onChange={() => setCover(im.id)} /> usar</span>
-                  <button type="submit" className="link-danger" formAction={deleteFileAction} name="fileId" value={im.id} onClick={confirmDelete(im.original_name)}>Excluir</button>
+                  <button type="submit" className="link-danger" formAction={deleteFileAction.bind(null, im.id)} onClick={confirmDelete(im.original_name)}>Excluir</button>
                 </label>
               ))}
             </div>
@@ -116,7 +116,7 @@ export default function PrayerEditor({ prayer }: { prayer: EditorPrayer }) {
             {prayer.files.filter((x) => x.id !== cover).map((x) => (
               <label key={x.id} className="radio-row">
                 <input type="checkbox" name="include" value={x.id} defaultChecked={prayer.included.includes(x.id)} /> {x.original_name}
-                <button type="submit" className="link-danger" formAction={deleteFileAction} name="fileId" value={x.id} onClick={confirmDelete(x.original_name)}>Excluir</button>
+                <button type="submit" className="link-danger" formAction={deleteFileAction.bind(null, x.id)} onClick={confirmDelete(x.original_name)}>Excluir</button>
               </label>
             ))}
           </div>
